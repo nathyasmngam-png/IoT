@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IoT Monitoring Dashboard</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Segoe UI',sans-serif;
+}
+
+body{
+min-height:100vh;
+padding:20px;
+background:linear-gradient(
+135deg,
+#f5f5f5,
+#fbcfe8
+);
+}
+
+.container{
+max-width:1200px;
+margin:auto;
+}
+
+.header{
+text-align:center;
+margin-bottom:25px;
+}
+
+.header h1{
+color:#374151;
+font-size:32px;
+font-weight:600;
+}
+
+.header p{
+color:#6b7280;
+margin-top:8px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:
+repeat(auto-fit,minmax(300px,1fr));
+gap:20px;
+}
+
+.card{
+background:#ffffff;
+border-radius:20px;
+padding:24px;
+box-shadow:
+0 4px 15px rgba(0,0,0,0.08);
+}
+
+.card h2{
+color:#374151;
+margin-bottom:15px;
+font-size:20px;
+}
+
+.btn{
+border:none;
+padding:12px 24px;
+border-radius:10px;
+cursor:pointer;
+font-size:15px;
+font-weight:500;
+margin-right:10px;
+transition:0.3s;
+}
+
+.btn-on{
+background:#ec4899;
+color:white;
+}
+
+.btn-on:hover{
+background:#db2777;
+}
+
+.btn-off{
+background:#6b7280;
+color:white;
+}
+
+.btn-off:hover{
+background:#4b5563;
+}
+
+.slider{
+width:100%;
+accent-color:#ec4899;
+}
+
+.slider-value{
+font-size:28px;
+font-weight:bold;
+margin:10px 0;
+color:#ec4899;
+}
+
+.led{
+width:50px;
+height:50px;
+border-radius:50%;
+background:#d1d5db;
+}
+
+.led-on{
+background:#ec4899;
+box-shadow:
+0 0 10px #ec4899,
+0 0 25px #ec4899;
+}
+
+.gauge{
+width:220px;
+height:220px;
+border-radius:50%;
+display:flex;
+justify-content:center;
+align-items:center;
+margin:auto;
+background:conic-gradient(
+#ec4899 0deg,
+#e5e7eb 0deg
+);
+}
+
+.gauge-inner{
+width:160px;
+height:160px;
+border-radius:50%;
+background:white;
+display:flex;
+justify-content:center;
+align-items:center;
+font-size:34px;
+font-weight:bold;
+color:#374151;
+}
+
+.label-box{
+background:#f9fafb;
+border:1px solid #e5e7eb;
+padding:15px;
+border-radius:12px;
+min-height:80px;
+color:#374151;
+}
+
+.footer{
+margin-top:20px;
+text-align:center;
+color:#6b7280;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+<h1>IoT Monitoring Dashboard</h1>
+<p>Blynk Cloud Control Panel</p>
+</div>
+
+<div class="grid">
+
+<div class="card">
+<h2>Device Control</h2>
+
+<button class="btn btn-on" onclick="setRelay(1)">
+เปิด
+</button>
+
+<button class="btn btn-off" onclick="setRelay(0)">
+ปิด
+</button>
+
+<br><br>
+
+สถานะ : <b id="relayState">-</b>
+
+</div>
+
+<div class="card">
+<h2>Light Intensity Control</h2>
+
+<input
+type="range"
+min="0"
+max="255"
+value="0"
+id="lightSlider"
+class="slider">
+
+<div
+class="slider-value"
+id="sliderValue">
+0
+</div>
+
+<button
+class="btn btn-on"
+onclick="sendLight()">
+ส่งค่า </button>
+
+</div>
+
+<div class="card">
+
+<h2>System Status</h2>
+
+<div id="led" class="led"></div>
+
+<br><br>
+
+<b id="ledText">
+OFFLINE
+</b>
+
+</div>
+
+<div class="card">
+
+<h2>Temperature Monitor</h2>
+
+<div class="gauge" id="gauge">
+
+<div class="gauge-inner">
+<span id="temp">0</span>°
+</div>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<h2>System Message</h2>
+
+<div id="reply" class="label-box">
+Waiting for data...
+</div>
+
+</div>
+
+</div>
+
+<div class="footer">
+
+Last Update
+
+<br>
+
+<span id="lastUpdate">-</span>
+
+</div>
+
+</div>
+
+<script>
+
+const TOKEN="qFawVe_mBy-He-lgZpcluqAPTcN7MOLn";
+
+const slider=document.getElementById("lightSlider");
+
+slider.addEventListener("input",()=>{
+
+document.getElementById("sliderValue")
+.innerText=slider.value;
+
+});
+
+async function setRelay(v){
+
+try{
+
+await fetch(
+`https://blynk.cloud/external/api/update?token=${TOKEN}&V0=${v}`
+);
+
+document.getElementById("relayState")
+.innerText=v==1?"ON":"OFF";
+
+}catch(error){
+
+console.log(error);
+
+}
+
+}
+
+async function sendLight(){
+
+try{
+
+await fetch(
+`https://blynk.cloud/external/api/update?token=${TOKEN}&V2=${slider.value}`
+);
+
+}catch(error){
+
+console.log(error);
+
+}
+
+}
+
+async function refreshData(){
+
+try{
+
+let relay=await fetch(
+`https://blynk.cloud/external/api/get?token=${TOKEN}&V0`
+);
+
+relay=await relay.text();
+
+document.getElementById("relayState")
+.innerText=relay=="1"?"ON":"OFF";
+
+const ledObj=
+document.getElementById("led");
+
+if(relay=="1"){
+
+ledObj.classList.add("led-on");
+
+document.getElementById("ledText")
+.innerText="ONLINE";
+
+}else{
+
+ledObj.classList.remove("led-on");
+
+document.getElementById("ledText")
+.innerText="OFFLINE";
+
+}
+
+let temp=await fetch(
+`https://blynk.cloud/external/api/get?token=${TOKEN}&V3`
+);
+
+temp=await temp.text();
+
+document.getElementById("temp")
+.innerText=temp;
+
+let degree=
+(parseInt(temp)||0)/100*360;
+
+document.getElementById("gauge")
+.style.background=
+
+`conic-gradient(
+#ec4899 ${degree}deg,
+#e5e7eb ${degree}deg
+)`;
+
+let reply=await fetch(
+`https://blynk.cloud/external/api/get?token=${TOKEN}&V4`
+);
+
+reply=await reply.text();
+
+document.getElementById("reply")
+.innerText=reply;
+
+document.getElementById("lastUpdate")
+.innerText=
+new Date().toLocaleTimeString();
+
+}
+catch(error){
+
+console.log(error);
+
+}
+
+}
+
+refreshData();
+
+setInterval(refreshData,1000);
+
+</script>
+
+</body>
+</html>
