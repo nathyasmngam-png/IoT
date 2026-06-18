@@ -50,19 +50,15 @@
             color: #cbd5e1;
         }
 
-        /* ไฮไลท์ช่องพิเศษ */
         .cell.ladder {
             background: #16a34a;
             color: white;
         }
 
-        /* เขียว = บันไดขึ้น */
         .cell.snake {
             background: #dc2626;
             color: white;
         }
-
-        /* แดง = งูกัดลง */
 
         .pieces-container {
             display: flex;
@@ -82,12 +78,9 @@
             background: #ef4444;
         }
 
-        /* ตัวหมากสีแดง */
         .piece.p2 {
             background: #3b82f6;
         }
-
-        /* ตัวหมากสีน้ำเงิน */
 
         input,
         button {
@@ -140,9 +133,14 @@
         }
 
         #timer {
-            font-size: 28px;
-            color: #ef4444;
+            font-size: 32px;
+            color: #f43f5e;
             font-weight: bold;
+            background: #881337;
+            display: inline-block;
+            padding: 2px 15px;
+            border-radius: 8px;
+            margin: 5px;
         }
     </style>
 </head>
@@ -152,8 +150,8 @@
     <div class="container">
         <h1>🐍 เกมต่อคำศัพท์ทั่วไป + บันไดงูออนไลน์</h1>
         <p style="font-size: 14px; margin: 5px 0; color: #cbd5e1;">
-            กติกา: พิมพ์คำศัพท์ภาษาไทยให้ถูกต้องตามหลักการต่อคำ เพื่อทอยเต๋าเดินหมาก <br>
-            <span style="color: #f43f5e; font-weight: bold;">⚠️ หากตอบผิด หรือไม่ตรงตัวอักษร จะถูกงดเล่นในตาถัดไป 1 ตา! (เวลาคิด 15 วินาที)</span>
+            กติกาคำง่ายๆ: พิมพ์คำศัพท์ที่ขึ้นต้นด้วยพยัญชนะท้ายของคำก่อนหน้า <br>
+            <span style="color: #38bdf8; font-weight: bold;">⏱️ มีเวลาคนละ 15 วินาที คิดให้ไวตอบให้ทันน้า!</span>
         </p>
 
         <div id="lobby-screen">
@@ -171,7 +169,6 @@
         </div>
 
         <div id="game-screen" class="hidden">
-
             <div class="board" id="board-grid"></div>
 
             <div class="status-box">
@@ -181,12 +178,12 @@
                 <div id="dice-result" style="font-size: 18px; color:#eab308; font-weight:bold;"></div>
             </div>
 
-            <div id="timer">15</div>
-            <h3 style="color: #eab308; margin: 5px 0;">คำล่าสุด: <span id="last-word">-</span></h3>
+            <div>⏱️ เวลาที่เหลือ: <div id="timer">15</div> วินาที</div>
+            <h3 style="color: #eab308; margin: 8px 0;">คำล่าสุด: <span id="last-word">-</span></h3>
             <div id="word-history"></div>
 
             <div id="action-area">
-                <input type="text" id="word-input" placeholder="พิมพ์คำศัพท์ภาษาไทยตรงนี้...">
+                <input type="text" id="word-input" placeholder="พิมพ์คำศัพท์ทั่วไปภาษาไทยตรงนี้...">
                 <button onclick="submitWord()">ส่งคำและทอยเต๋า 🎲</button>
             </div>
         </div>
@@ -214,7 +211,17 @@
         let roomState = {};
         let timerInterval = null;
 
-        // โครงสร้างบันไดและงู (ช่อง 1 ถึง 50)
+        // คลังคำศัพท์ทั่วไปแบบง่ายๆ เน้นคำที่วัยรุ่นหรือเด็กนักเรียนนึกออกง่าย
+        const GENERAL_WORDS_BANK = [
+            "คอมพิวเตอร์", "ผลไม้", "มะม่วง", "กล้วย", "สับปะรด", "ส้มโอ", "โอ่งน้ำ", "น้ำปลา", "ปลากระป๋อง", "กระดาน",
+            "ดินสอ", "สมุด", "ไม้บรรทัด", "พัดลม", "โคมไฟ", "โต๊ะเรียน", "เก้าอี้", "กระเป๋า", "รองเท้า", "เสื้อผ้า",
+            "รถยนต์", "รถไฟ", "โรงเรียน", "โรงพยาบาล", "ตลาด", "กระดาษ", "ยางลบ", "ไม้จิ้มฟัน", "ฟันผุ", "ยาสีฟัน",
+            "มะพร้าว", "มะนาว", "แตงโม", "สตรอว์เบอร์รี", "องุ่น", "ส้ม", "มังคุด", "ทุเรียน", "เงาะ", "ลำไย",
+            "นาฬิกา", "โทรศัพท์", "กระจก", "ประตู", "หน้าต่าง", "หลังคา", "จานข้าว", "ช้อนส้อม", "แก้วน้ำ", "ตู้เย็น",
+            "ไก่", "ไข่", "ควาย", "งู", "จาน", "ช้าง", "เต่า", "ทหาร", "นก", "หนู", "ปลา", "ผึ้ง", "ม้า", "แมว", "หมา",
+            "สิงโต", "เสือ", "ลิง", "กุ้ง", "หอย", "ปู", "แกะ", "แพะ", "วัว", "กระต่าย", "กระรอก", "นกยูง", "สีแดง", "สีฟ้า"
+        ];
+
         const ladders = { 4: 14, 12: 22, 20: 38, 28: 40, 36: 46 };
         const snakes = { 15: 5, 27: 9, 35: 17, 43: 23, 49: 31 };
 
@@ -278,20 +285,19 @@
                     roomCode: currentRoomId,
                     status: "waiting",
                     players: [myName],
-                    currentWord: "กล้วย",
+                    currentWord: "ผลไม้",
                     p1Pos: 1,
                     p2Pos: 1,
                     lastDice: 0,
-                    timer: 15,
-                    skipTurn: ""
+                    timer: 15
                 });
             } else {
                 const data = roomSnap.data();
-                if (data.players.includes(myName)) {
-                } else if (data.players.length >= 2) {
-                    alert("ห้องเต็มแล้วจ้า!");
-                    return;
-                } else {
+                if (!data.players.includes(myName)) {
+                    if (data.players.length >= 2) {
+                        alert("ห้องเต็มแล้วจ้า!");
+                        return;
+                    }
                     let updatedPlayers = [...data.players, myName];
                     await setDoc(roomRef, { players: updatedPlayers }, { merge: true });
 
@@ -301,8 +307,7 @@
                             player1: updatedPlayers[0],
                             player2: updatedPlayers[1],
                             currentTurn: updatedPlayers[0],
-                            timer: 15,
-                            skipTurn: ""
+                            timer: 15
                         }, { merge: true });
                         startCountdownTrigger();
                     }
@@ -337,19 +342,19 @@
                     if (roomState.lastDice > 0) {
                         document.getElementById("dice-result").innerText = `🎲 ผลการทอยล่าสุดได้: ${roomState.lastDice} แต้ม!`;
                     } else if (roomState.lastDice === -1) {
-                        document.getElementById("dice-result").innerText = `❌ ตอบคำศัพท์ผิด! โดนหยุดเล่น 1 ตา`;
+                        document.getElementById("dice-result").innerText = `⏰ หมดเวลา 15 วิ! เปลี่ยนตาผู้เล่น`;
                     }
 
                     let lastW = roomState.currentWord;
                     let lastC = getLastThaiChar(lastW);
-                    document.getElementById("last-word").innerHTML = `${lastW} (คำต่อไปขึ้นด้วยตัว: <b style="color:#ef4444; font-size:24px;">${lastC}</b>)`;
+                    document.getElementById("last-word").innerHTML = `${lastW} (คำต่อไปขึ้นด้วยตัว: <b style="color:#f43f5e; font-size:24px;">${lastC}</b>)`;
 
                     document.getElementById("current-turn").innerText = roomState.currentTurn;
                     document.getElementById("timer").innerText = roomState.timer;
 
                     if (roomState.status === "finished") {
                         document.getElementById("dice-result").innerText = `🎉 เกมจบแล้ว!`;
-                        document.getElementById("action-area").innerHTML = `<h2>🏆 ผู้ชนะคือคุณ ${roomState.finalWinner}! สำเร็จ!</h2>`;
+                        document.getElementById("action-area").innerHTML = `<h2>🏆 ผู้ชนะคือคุณ ${roomState.finalWinner}! ยินดีด้วยจ้า!</h2>`;
                         clearInterval(timerInterval);
                         return;
                     }
@@ -370,7 +375,7 @@
                 let html = "";
                 snapshot.forEach((doc) => {
                     const data = doc.data();
-                    let diceText = data.dice > 0 ? `🎲 +${data.dice}` : `❌ ตอบผิด!`;
+                    let diceText = data.dice > 0 ? `🎲 +${data.dice}` : `❌ คำไม่ถูกต้อง`;
                     html += `<p style="margin:4px 0;"><b>${data.player}:</b> <span style="color:${data.dice > 0 ? '#10b981' : '#ef4444'};">${data.word}</span> (${diceText})</p>`;
                 });
                 const box = document.getElementById("word-history");
@@ -390,43 +395,23 @@
             let isP1 = (roomState.currentTurn === roomState.player1);
             let nextTurn = isP1 ? roomState.player2 : roomState.player1;
 
-            // ตรวจสอบความถูกต้อง (เอาตัวตรวจสอบฐานข้อมูลออกเพื่อให้เล่นง่ายขึ้น แค่ตัวแรกตรงกับตัวท้ายคำก่อนหน้าพอ)
-            if (lastChar !== firstChar) {
-                alert(`❌ คำว่า "${inputWord}" ผิดกติกา! ขึ้นต้นด้วยตัวอักษรไม่ถูกต้อง (ต้องการ ${lastChar}) คุณจะถูกงดเล่นในตาถัดไป 1 ตา`);
+            let isCorrectWord = GENERAL_WORDS_BANK.includes(inputWord);
 
-                await addDoc(collection(db, "rooms", currentRoomId, "words"), {
-                    player: myName,
-                    word: inputWord + " (ผิดกติกา)",
-                    dice: 0,
-                    time: Date.now()
-                });
-
-                await setDoc(doc(db, "rooms", currentRoomId), {
-                    currentTurn: nextTurn,
-                    lastDice: -1,
-                    timer: 15,
-                    skipTurn: myName
-                }, { merge: true });
-
+            if (lastChar !== firstChar || !isCorrectWord) {
+                alert(`❌ คำว่า "${inputWord}" ผิดกติกาหรือไม่มีในคลังคำศัพท์! ลองพิมพ์คำอื่นดูใหม่นะยังไม่หมดเวลา`);
                 document.getElementById("word-input").value = "";
                 return;
             }
 
-            // กรณีตอบถูก
+            // ตอบถูก -> สุ่มแต้มเดิน
             let diceRoll = Math.floor(Math.random() * 6) + 1;
             let currentPos = isP1 ? roomState.p1Pos : roomState.p2Pos;
             let nextPos = currentPos + diceRoll;
 
             if (nextPos > 50) nextPos = 50;
 
-            let eventText = "";
-            if (ladders[nextPos]) {
-                nextPos = ladders[nextPos];
-                eventText = " โชคดีเจอปีนบันไดวาร์ปขึ้น! 🪜";
-            } else if (snakes[nextPos]) {
-                nextPos = snakes[nextPos];
-                eventText = " ว๊ายยโดนงูกัดสไลด์ร่วงลงมา! 🐍";
-            }
+            if (ladders[nextPos]) nextPos = ladders[nextPos];
+            else if (snakes[nextPos]) nextPos = snakes[nextPos];
 
             let gameFinished = (nextPos === 50);
 
@@ -437,17 +422,11 @@
                 time: Date.now()
             });
 
-            if (roomState.skipTurn === nextTurn) {
-                alert(`📢 เนื่องจากคุณ ${nextTurn} ติดโทษในรอบก่อน ตาต่อไปจึงถูกข้ามและกลับมาเป็นของ ${myName} อีกครั้ง!`);
-                nextTurn = myName;
-            }
-
             let updateData = {
                 currentWord: inputWord,
                 currentTurn: nextTurn,
                 lastDice: diceRoll,
-                timer: 15,
-                skipTurn: roomState.skipTurn === nextTurn ? "" : roomState.skipTurn
+                timer: 15
             };
 
             if (isP1) updateData.p1Pos = nextPos;
@@ -460,8 +439,6 @@
 
             await setDoc(doc(db, "rooms", currentRoomId), updateData, { merge: true });
             document.getElementById("word-input").value = "";
-
-            if (eventText !== "") alert(`ผลเต๋าของคุณ: ได้ ${diceRoll} แต้ม! และ ${eventText}`);
         };
 
         function startCountdownTrigger() {
@@ -472,14 +449,14 @@
                     let newTimer = roomState.timer - 1;
 
                     if (newTimer <= 0) {
-                        let loser = roomState.currentTurn;
-                        let winner = (loser === roomState.player1) ? roomState.player2 : roomState.player1;
-
-                        alert(`⏰ หมดเวลา 15 วินาที! คุณ ${loser} ตอบไม่ทัน รอบนี้คุณ ${winner} ชนะทัวร์นาเมนต์ไปเลยจ้า!`);
+                        // หมดเวลา 15 วิ สลับตาให้อีกคนเล่นทันที เกมไม่ล่ม
+                        let current = roomState.currentTurn;
+                        let next = (current === roomState.player1) ? roomState.player2 : roomState.player1;
 
                         await setDoc(doc(db, "rooms", currentRoomId), {
-                            status: "finished",
-                            finalWinner: winner
+                            currentTurn: next,
+                            lastDice: -1,
+                            timer: 15
                         }, { merge: true });
                     } else {
                         await setDoc(doc(db, "rooms", currentRoomId), { timer: newTimer }, { merge: true });
