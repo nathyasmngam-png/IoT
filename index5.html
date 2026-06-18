@@ -214,6 +214,7 @@
         let currentRoomId = "";
         let roomState = {};
         let timerInterval = null;
+        let usedWords = new Set(); // เก็บคำที่ใช้ไปแล้วทั้งหมด ห้ามซ้ำ
 
         const ladders = { 4: 14, 12: 22, 20: 38, 28: 40, 36: 46 };
         const snakes = { 15: 5, 27: 9, 35: 17, 43: 23, 49: 31 };
@@ -368,8 +369,13 @@
             const q = query(collection(db, "rooms", currentRoomId, "words"), orderBy("time", "asc"));
             onSnapshot(q, (snapshot) => {
                 let html = "";
+                usedWords.clear(); // รีเซ็ตแล้วเก็บใหม่ทุกครั้งที่มีอัปเดต
                 snapshot.forEach((doc) => {
                     const data = doc.data();
+                    // เก็บคำที่ใช้ไปแล้ว (ไม่รวมข้อความระบบเช่น หมดเวลา)
+                    if (data.dice > 0) {
+                        usedWords.add(data.word);
+                    }
                     let diceText = data.dice > 0 ? `🎲 +${data.dice}` : `❌ คำไม่ถูกต้อง`;
                     html += `<p style="margin:4px 0;"><b>${data.player}:</b> <span style="color:${data.dice > 0 ? '#10b981' : '#ef4444'};">${data.word}</span> (${diceText})</p>`;
                 });
@@ -389,6 +395,13 @@
 
             let isP1 = (roomState.currentTurn === roomState.player1);
             let nextTurn = isP1 ? roomState.player2 : roomState.player1;
+
+            // ห้ามใช้คำซ้ำที่เคยพิมพ์ไปแล้ว
+            if (usedWords.has(inputWord)) {
+                alert(`🚫 คำว่า "${inputWord}" ถูกใช้ไปแล้ว! ห้ามใช้คำซ้ำนะ ลองคิดคำอื่นดู`);
+                document.getElementById("word-input").value = "";
+                return;
+            }
 
             let isValidThaiWord = inputWord.length >= 2 && /^[\u0E00-\u0E7F]+$/.test(inputWord);
 
