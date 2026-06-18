@@ -455,3 +455,23 @@
                         let nextTurn = (roomState.currentTurn === roomState.player1) ? roomState.player2 : roomState.player1;
                         
                         // บันทึกประวัติว่าหมดเวลา
+                        await addDoc(collection(db, "rooms", currentRoomId, "words"), {
+                            player: roomState.currentTurn,
+                            word: "⏰ หมดเวลาคิดคำศัพท์!",
+                            dice: 0,
+                            time: Date.now()
+                        });
+
+                        // อัปเดตข้ามตาผู้เล่นบน Firebase
+                        await updateDoc(doc(db, "rooms", currentRoomId), {
+                            currentTurn: nextTurn,
+                            timer: 15 // รีเซ็ตเวลาให้คนต่อไป
+                        });
+                    }
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+
+</html>
