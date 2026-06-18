@@ -151,7 +151,7 @@
         <h1>🐍 เกมต่อคำศัพท์ทั่วไป + บันไดงูออนไลน์</h1>
         <p style="font-size: 14px; margin: 5px 0; color: #cbd5e1;">
             กติกาคำง่ายๆ: พิมพ์คำศัพท์ที่ขึ้นต้นด้วยพยัญชนะท้ายของคำก่อนหน้า <br>
-            <span style="color: #38bdf8; font-weight: bold;">⏱️ มีเวลาคนละ 15 วินาที คิดให้ไวตอบให้ทันน้า!</span>
+            <span style="color: #f43f5e; font-weight: bold;">⏱️ รีบหน่อยนะ! มีเวลาคิดตาละ 15 วินาที</span>
         </p>
 
         <div id="lobby-screen">
@@ -169,6 +169,11 @@
         </div>
 
         <div id="game-screen" class="hidden">
+            <div>
+                <span>⏱️ เวลาที่เหลือ: </span>
+                <div id="timer">15</div>
+            </div>
+
             <div class="board" id="board-grid"></div>
 
             <div class="status-box">
@@ -178,7 +183,6 @@
                 <div id="dice-result" style="font-size: 18px; color:#eab308; font-weight:bold;"></div>
             </div>
 
-            <div>⏱️ เวลาที่เหลือ: <div id="timer">15</div> วินาที</div>
             <h3 style="color: #eab308; margin: 8px 0;">คำล่าสุด: <span id="last-word">-</span></h3>
             <div id="word-history"></div>
 
@@ -191,7 +195,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, query, orderBy, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDQWMlGCgRPErnGQyEFZIKH2KRVbeN81_Q",
@@ -210,17 +214,6 @@
         let currentRoomId = "";
         let roomState = {};
         let timerInterval = null;
-
-        // คลังคำศัพท์ทั่วไปแบบง่ายๆ เน้นคำที่วัยรุ่นหรือเด็กนักเรียนนึกออกง่าย
-        const GENERAL_WORDS_BANK = [
-            "คอมพิวเตอร์", "ผลไม้", "มะม่วง", "กล้วย", "สับปะรด", "ส้มโอ", "โอ่งน้ำ", "น้ำปลา", "ปลากระป๋อง", "กระดาน",
-            "ดินสอ", "สมุด", "ไม้บรรทัด", "พัดลม", "โคมไฟ", "โต๊ะเรียน", "เก้าอี้", "กระเป๋า", "รองเท้า", "เสื้อผ้า",
-            "รถยนต์", "รถไฟ", "โรงเรียน", "โรงพยาบาล", "ตลาด", "กระดาษ", "ยางลบ", "ไม้จิ้มฟัน", "ฟันผุ", "ยาสีฟัน",
-            "มะพร้าว", "มะนาว", "แตงโม", "สตรอว์เบอร์รี", "องุ่น", "ส้ม", "มังคุด", "ทุเรียน", "เงาะ", "ลำไย",
-            "นาฬิกา", "โทรศัพท์", "กระจก", "ประตู", "หน้าต่าง", "หลังคา", "จานข้าว", "ช้อนส้อม", "แก้วน้ำ", "ตู้เย็น",
-            "ไก่", "ไข่", "ควาย", "งู", "จาน", "ช้าง", "เต่า", "ทหาร", "นก", "หนู", "ปลา", "ผึ้ง", "ม้า", "แมว", "หมา",
-            "สิงโต", "เสือ", "ลิง", "กุ้ง", "หอย", "ปู", "แกะ", "แพะ", "วัว", "กระต่าย", "กระรอก", "นกยูง", "สีแดง", "สีฟ้า"
-        ];
 
         const ladders = { 4: 14, 12: 22, 20: 38, 28: 40, 36: 46 };
         const snakes = { 15: 5, 27: 9, 35: 17, 43: 23, 49: 31 };
@@ -285,7 +278,7 @@
                     roomCode: currentRoomId,
                     status: "waiting",
                     players: [myName],
-                    currentWord: "ผลไม้",
+                    currentWord: "ส้ม",
                     p1Pos: 1,
                     p2Pos: 1,
                     lastDice: 0,
@@ -309,7 +302,6 @@
                             currentTurn: updatedPlayers[0],
                             timer: 15
                         }, { merge: true });
-                        startCountdownTrigger();
                     }
                 }
             }
@@ -341,8 +333,6 @@
 
                     if (roomState.lastDice > 0) {
                         document.getElementById("dice-result").innerText = `🎲 ผลการทอยล่าสุดได้: ${roomState.lastDice} แต้ม!`;
-                    } else if (roomState.lastDice === -1) {
-                        document.getElementById("dice-result").innerText = `⏰ หมดเวลา 15 วิ! เปลี่ยนตาผู้เล่น`;
                     }
 
                     let lastW = roomState.currentWord;
@@ -350,6 +340,8 @@
                     document.getElementById("last-word").innerHTML = `${lastW} (คำต่อไปขึ้นด้วยตัว: <b style="color:#f43f5e; font-size:24px;">${lastC}</b>)`;
 
                     document.getElementById("current-turn").innerText = roomState.currentTurn;
+
+                    // แสดงเวลาปัจจุบันจาก Firebase ลงบนหน้าจอ
                     document.getElementById("timer").innerText = roomState.timer;
 
                     if (roomState.status === "finished") {
@@ -365,6 +357,9 @@
                     } else {
                         document.getElementById("word-input").disabled = true;
                     }
+
+                    // เรียกตัวกระตุ้นการนับเวลาถอยหลัง
+                    startCountdownTrigger();
                 }
             });
         }
@@ -395,15 +390,15 @@
             let isP1 = (roomState.currentTurn === roomState.player1);
             let nextTurn = isP1 ? roomState.player2 : roomState.player1;
 
-            let isCorrectWord = GENERAL_WORDS_BANK.includes(inputWord);
+            let isValidThaiWord = inputWord.length >= 2 && /^[\u0E00-\u0E7F]+$/.test(inputWord);
 
-            if (lastChar !== firstChar || !isCorrectWord) {
-                alert(`❌ คำว่า "${inputWord}" ผิดกติกาหรือไม่มีในคลังคำศัพท์! ลองพิมพ์คำอื่นดูใหม่นะยังไม่หมดเวลา`);
+            if (lastChar !== firstChar || !isValidThaiWord) {
+                let reason = !isValidThaiWord ? "ต้องเป็นคำภาษาไทยอย่างน้อย 2 ตัวอักษร" : `คำต้องขึ้นต้นด้วย "${lastChar}"`;
+                alert(`❌ คำว่า "${inputWord}" ผิดกติกา! ${reason} ลองใหม่นะยังไม่หมดเวลา`);
                 document.getElementById("word-input").value = "";
                 return;
             }
 
-            // ตอบถูก -> สุ่มแต้มเดิน
             let diceRoll = Math.floor(Math.random() * 6) + 1;
             let currentPos = isP1 ? roomState.p1Pos : roomState.p2Pos;
             let nextPos = currentPos + diceRoll;
@@ -426,7 +421,7 @@
                 currentWord: inputWord,
                 currentTurn: nextTurn,
                 lastDice: diceRoll,
-                timer: 15
+                timer: 15 // รีเซ็ตเวลากลับเป็น 15 วินาทีสำหรับคนต่อไป
             };
 
             if (isP1) updateData.p1Pos = nextPos;
@@ -441,30 +436,22 @@
             document.getElementById("word-input").value = "";
         };
 
+        // ⏱️ ระบบนับเวลาถอยหลัง (Host/Player 1 จะเป็นตัวหลักในการควบคุมเวลาเพื่อความซิงค์กัน)
         function startCountdownTrigger() {
-            if (timerInterval) clearInterval(timerInterval);
+            if (timerInterval) return; // ถ้ามีลูปตั้งไว้แล้วไม่ต้องรันซ้อน
 
             timerInterval = setInterval(async () => {
-                if (roomState.players && roomState.players[0] === myName && roomState.status === "playing") {
-                    let newTimer = roomState.timer - 1;
-
-                    if (newTimer <= 0) {
-                        // หมดเวลา 15 วิ สลับตาให้อีกคนเล่นทันที เกมไม่ล่ม
-                        let current = roomState.currentTurn;
-                        let next = (current === roomState.player1) ? roomState.player2 : roomState.player1;
-
-                        await setDoc(doc(db, "rooms", currentRoomId), {
-                            currentTurn: next,
-                            lastDice: -1,
-                            timer: 15
-                        }, { merge: true });
+                // ให้เฉพาะผู้เล่นคนแรก (Player 1) ทำหน้าที่ส่งคำสั่งลดเวลาลง Database
+                if (roomState.status === "playing" && myName === roomState.player1) {
+                    let currentTimer = roomState.timer;
+                    
+                    if (currentTimer > 0) {
+                        // หักเวลาลง 1 วินาที
+                        await updateDoc(doc(db, "rooms", currentRoomId), {
+                            timer: currentTimer - 1
+                        });
                     } else {
-                        await setDoc(doc(db, "rooms", currentRoomId), { timer: newTimer }, { merge: true });
-                    }
-                }
-            }, 1000);
-        }
-    </script>
-</body>
-
-</html>
+                        // 🚨 กรณีเวลาเหลือ 0 (หมดเวลาคิดคำศัพท์) -> สลับตาทันที
+                        let nextTurn = (roomState.currentTurn === roomState.player1) ? roomState.player2 : roomState.player1;
+                        
+                        // บันทึกประวัติว่าหมดเวลา
