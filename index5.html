@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เกมต่อคำไอที + บันไดงูออนไลน์ (1 VS 1)</title>
+    <title>เกมต่อคำศัพท์ทั่วไป + บันไดงูออนไลน์ (1 VS 1)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -157,10 +157,11 @@
 <body>
 
     <div class="container">
-        <h1>🐍 เกมต่อคำศัพท์ไอที + บันไดงูออนไลน์</h1>
+        <h1>🐍 เกมต่อคำศัพท์ทั่วไป + บันไดงูออนไลน์</h1>
         <p style="font-size: 14px; margin: 5px 0; color: #cbd5e1;">
-            กติกา: พิมพ์คำศัพท์คอมฯ ไทยให้ถูกต้องเพื่อทอยเต๋าเดินหมาก <br>
-            <span style="color: #f43f5e; font-weight: bold;">⚠️ หากตอบผิด หรือคำศัพท์ไม่มีความหมายทางไอที จะถูกงดเล่นในตาถัดไป 1 ตา!</span>
+            กติกา: พิมพ์คำศัพท์ทั่วไป (ผลไม้ สิ่งของ คำทั่วไป) ให้ถูกต้องเพื่อทอยเต๋าเดินหมาก <br>
+            <span style="color: #f43f5e; font-weight: bold;">⚠️ หากตอบผิด หรือคำศัพท์ไม่อยู่ในเงื่อนไขการต่อคำ
+                จะถูกงดเล่นในตาถัดไป 1 ตา!</span>
         </p>
 
         <div id="lobby-screen">
@@ -184,7 +185,8 @@
             <div class="status-box">
                 <span style="color:#ef4444;">🔴 <span id="p1-label">-</span></span> |
                 <span style="color:#3b82f6;">🔵 <span id="p2-label">-</span></span>
-                <p style="margin: 5px 0;">🟢 ตาของ: <span id="current-turn" style="color:#10b981; font-weight:bold;">-</span></p>
+                <p style="margin: 5px 0;">🟢 ตาของ: <span id="current-turn"
+                        style="color:#10b981; font-weight:bold;">-</span></p>
                 <div id="dice-result" style="font-size: 18px; color:#eab308; font-weight:bold;"></div>
             </div>
 
@@ -193,7 +195,7 @@
             <div id="word-history"></div>
 
             <div id="action-area">
-                <input type="text" id="word-input" placeholder="พิมพ์คำศัพท์ไอทีภาษาไทยตรงนี้...">
+                <input type="text" id="word-input" placeholder="พิมพ์คำศัพท์ทั่วไปภาษาไทยตรงนี้...">
                 <button onclick="submitWord()">ส่งคำและทอยเต๋า 🎲</button>
             </div>
         </div>
@@ -221,19 +223,18 @@
         let roomState = {};
         let timerInterval = null;
 
-        // 📝 คลังคำศัพท์ไอทีและคอมพิวเตอร์ภาษาไทยที่มีความหมาย (สามารถแอดเพิ่มตรงนี้ได้เรื่อยๆ ครับ)
-        const IT_WORDS_BANK = [
-            "คอมพิวเตอร์", "คีย์บอร์ด", "เมาส์", "หน้าจอ", "อินเทอร์เน็ต", "ซอฟต์แวร์", "ฮาร์ดแวร์", "เครือข่าย",
-            "ข้อมูล", "หน่วยความจำ", "ระบบปฏิบัติการ", "โปรแกรมเมอร์", "โค้ดดิ้ง", "อัลกอริทึม", "ฐานข้อมูล",
-            "เว็บบราวเซอร์", "เซิร์ฟเวอร์", "คลาวด์", "แอปพลิเคชัน", "สมาร์ตโฟน", "เราเตอร์", "ไวรัส", "ไฟร์วอลล์",
-            "พิกเซล", "บิต", "ไบต์", "เมกะไบต์", "กิกะไบต์", "ลิงก์", "เว็บไซต์", "ดิจิทัล", "เทคโนโลยี",
-            "ปัญญาประดิษฐ์", "หุ่นยนต์", "ไซเบอร์", "รหัสผ่าน", "อีเมล", "แชต", "เกมมิ่ง", "กราฟิก",
-            "เมนบอร์ด", "โปรเซสเซอร์", "พรินเตอร์", "สแกนเนอร์", "ยูเอสบี", "ไดรเวอร์", "โมเด็ม", "แอนิเมชัน"
+        // 📝 คลังคำศัพท์ทั่วไปภาษาไทย (ผลไม้, ของใช้, คอมพิวเตอร์ และคำทั่วไป) สามารถแอดเพิ่มตรงนี้ได้เรื่อยๆ ครับ
+        const GENERAL_WORDS_BANK = [
+            "คอมพิวเตอร์", "ผลไม้", "มะม่วง", "กล้วย", "สับปะรด", "ส้มโอ", "โอ่งน้ำ", "น้ำปลา", "ปลากระป๋อง", "กระดาน",
+            "ดินสอ", "สมุด", "ไม้บรรทัด", "พัดลม", "โคมไฟ", "โต๊ะเรียน", "เก้าอี้", "กระเป๋า", "รองเท้า", "เสื้อผ้า",
+            "รถยนต์", "รถไฟ", "โรงเรียน", "โรงพยาบาล", "ตลาด", "กระดาษ", "ยางลบ", "ไม้จิ้มฟัน", "ฟันผุ", "ยาสีฟัน",
+            "มะพร้าว", "มะนาว", "แตงโม", "สตรอว์เบอร์รี", "องุ่น", "ส้ม", "มังคุด", "ทุเรียน", "เงาะ", "ลำไย",
+            "นาฬิกา", "โทรศัพท์", "กระจก", "ประตู", "หน้าต่าง", "หลังคา", "จานข้าว", "ช้อนส้อม", "แก้วน้ำ", "ตู้เย็น"
         ];
 
         // โครงสร้างบันไดและงู (ช่อง 1 ถึง 50)
-        const ladders = { 4: 14, 12: 22, 20: 38, 28: 40, 36: 46 }; 
-        const snakes = { 15: 5, 27: 9, 35: 17, 43: 23, 49: 31 };    
+        const ladders = { 4: 14, 12: 22, 20: 38, 28: 40, 36: 46 };
+        const snakes = { 15: 5, 27: 9, 35: 17, 43: 23, 49: 31 };
 
         function getLastThaiChar(word) {
             let cleanWord = word.replace(/[ะาิีึืุูေဲောํ์่้๊๋็]/g, '');
@@ -295,12 +296,12 @@
                     roomCode: currentRoomId,
                     status: "waiting",
                     players: [myName],
-                    currentWord: "คอมพิวเตอร์",
-                    p1Pos: 1, 
+                    currentWord: "ผลไม้",
+                    p1Pos: 1,
                     p2Pos: 1,
                     lastDice: 0,
                     timer: 20,
-                    skipTurn: "" // บันทึกชื่อผู้เล่นที่โดนแบนห้ามเล่นในตานั้นๆ
+                    skipTurn: ""
                 });
             } else {
                 const data = roomSnap.data();
@@ -366,7 +367,7 @@
 
                     if (roomState.status === "finished") {
                         document.getElementById("dice-result").innerText = `🎉 เกมจบแล้ว!`;
-                        document.getElementById("action-area").innerHTML = `<h2>🏆 ผู้ชนะคือคุณ ${roomState.finalWinner}!สำเร็จ!</h2>`;
+                        document.getElementById("action-area").innerHTML = `<h2>🏆 ผู้ชนะคือคุณ ${roomState.finalWinner}! สำเร็จ!</h2>`;
                         clearInterval(timerInterval);
                         return;
                     }
@@ -388,7 +389,7 @@
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     let diceText = data.dice > 0 ? `🎲 +${data.dice}` : `❌ ตอบผิด! โดนข้ามตา`;
-                    html += `<p style="margin:4px 0;"><b>${data.player}:</b> <span style="color:${data.dice > 0 ? '#10b981':'#ef4444'};">${data.word}</span> (${diceText})</p>`;
+                    html += `<p style="margin:4px 0;"><b>${data.player}:</b> <span style="color:${data.dice > 0 ? '#10b981' : '#ef4444'};">${data.word}</span> (${diceText})</p>`;
                 });
                 const box = document.getElementById("word-history");
                 box.innerHTML = html;
@@ -407,34 +408,31 @@
             let isP1 = (roomState.currentTurn === roomState.player1);
             let nextTurn = isP1 ? roomState.player2 : roomState.player1;
 
-            // 1. ตรวจสอบเงื่อนไขว่าถูกตัวอักษรไหม และอยู่ในคลังคำศัพท์คอมฯ ไหม
-            let isCorrectITWord = IT_WORDS_BANK.includes(inputWord);
+            // ตรวจสอบเงื่อนไขตัวอักษรและคลังคำศัพท์
+            let isCorrectWord = GENERAL_WORDS_BANK.includes(inputWord);
 
-            if (lastChar !== firstChar || !isCorrectITWord) {
-                // 🛑 กรณีตอบผิดกฎ / ไม่มีในคลังศัพท์ไอที: ไม่คืบหน้า และติดโทษโดนงดเล่นรอบหน้า
-                alert(`❌ คำว่า "${inputWord}" ผิดกติกาหรือไม่มีความหมายในทางไอที! คุณจะถูกงดเล่นในตาถัดไป 1 ตา`);
+            if (lastChar !== firstChar || !isCorrectWord) {
+                alert(`❌ คำว่า "${inputWord}" ผิดกติกาหรือไม่มีในคลังคำศัพท์! คุณจะถูกงดเล่นในตาถัดไป 1 ตา`);
 
                 await addDoc(collection(db, "rooms", currentRoomId, "words"), {
                     player: myName,
-                    word: inputWord + " (ผิดกติกา/ไร้ความหมาย)",
+                    word: inputWord + " (ผิดกติกา)",
                     dice: 0,
                     time: Date.now()
                 });
 
-                // ตั้งให้ตาถัดไป คนอื่นได้เล่น และเมื่อวนกลับมาหาตัวเอง ตัวเองจะถูก skip (ส่งค่า skipTurn = ตัวเอง)
-                let nextNextTurn = nextTurn; 
                 await setDoc(doc(db, "rooms", currentRoomId), {
                     currentTurn: nextTurn,
-                    lastDice: -1, // สัญลักษณ์แสดงผลว่าตอบผิด
+                    lastDice: -1,
                     timer: 20,
-                    skipTurn: myName // บันทึกว่าตนเองจะโดนข้ามในรอบหน้า
+                    skipTurn: myName
                 }, { merge: true });
 
                 document.getElementById("word-input").value = "";
                 return;
             }
 
-            // 2. กรณีตอบถูกกฎคำศัพท์ไอที
+            // กรณีตอบถูก
             let diceRoll = Math.floor(Math.random() * 6) + 1;
             let currentPos = isP1 ? roomState.p1Pos : roomState.p2Pos;
             let nextPos = currentPos + diceRoll;
@@ -459,10 +457,9 @@
                 time: Date.now()
             });
 
-            // ตรวจสอบระบบ Skip Turn: ถ้าตาต่อไป ฝั่งตรงข้ามเคยโดนลงโทษไว้ ให้ข้ามกลับมาเป็นตาเราทันที!
             if (roomState.skipTurn === nextTurn) {
                 alert(`📢 เนื่องจากคุณ ${nextTurn} ติดโทษตอบผิดในรอบก่อน ตาต่อไปจึงถูกข้ามและกลับมาเป็นของ ${myName} อีกครั้ง!`);
-                nextTurn = myName; // ข้ามฝั่งตรงข้าม ดึงตากลับมาให้ตัวเองเล่นต่อเลย
+                nextTurn = myName;
             }
 
             let updateData = {
@@ -470,7 +467,7 @@
                 currentTurn: nextTurn,
                 lastDice: diceRoll,
                 timer: 20,
-                skipTurn: roomState.skipTurn === nextTurn ? "" : roomState.skipTurn // ล้างสถานะเมื่อโดนข้ามไปแล้ว
+                skipTurn: roomState.skipTurn === nextTurn ? "" : roomState.skipTurn
             };
 
             if (isP1) updateData.p1Pos = nextPos;
@@ -498,7 +495,7 @@
                         let loser = roomState.currentTurn;
                         let winner = (loser === roomState.player1) ? roomState.player2 : roomState.player1;
 
-                        alert(`⏰ หมดเวลา!คุณ ${loser} ตอบไม่ทัน รอบนี้คุณ ${winner} ชนะทัวร์นาเมนต์ไปเลยจ้า!`);
+                        alert(`⏰ หมดเวลา! คุณ ${loser} ตอบไม่ทัน รอบนี้คุณ ${winner} ชนะทัวร์นาเมนต์ไปเลยจ้า!`);
 
                         await setDoc(doc(db, "rooms", currentRoomId), {
                             status: "finished",
