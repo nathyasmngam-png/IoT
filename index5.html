@@ -384,4 +384,110 @@
             if (!inputWord) return;
 
             let lastWord = roomState.currentWord;
-            let lastChar = getLastThaiChar(lastWord
+            let lastChar = getLastThaiChar(lastWord);
+            let firstChar = getFirstThaiChar(inputWord);
+
+            let isP1 = (roomState.currentTurn === roomState.player1);
+            let nextTurn = isP1 ? roomState.player2 : roomState.player1;
+
+            // ตรวจสอบความถูกต้อง (เอาตัวตรวจสอบฐานข้อมูลออกเพื่อให้เล่นง่ายขึ้น แค่ตัวแรกตรงกับตัวท้ายคำก่อนหน้าพอ)
+            if (lastChar !== firstChar) {
+                alert(`❌ คำว่า "${inputWord}" ผิดกติกา! ขึ้นต้นด้วยตัวอักษรไม่ถูกต้อง (ต้องการ ${lastChar}) คุณจะถูกงดเล่นในตาถัดไป 1 ตา`);
+
+                await addDoc(collection(db, "rooms", currentRoomId, "words"), {
+                    player: myName,
+                    word: inputWord + " (ผิดกติกา)",
+                    dice: 0,
+                    time: Date.now()
+                });
+
+                await setDoc(doc(db, "rooms", currentRoomId), {
+                    currentTurn: nextTurn,
+                    lastDice: -1,
+                    timer: 15,
+                    skipTurn: myName
+                }, { merge: true });
+
+                document.getElementById("word-input").value = "";
+                return;
+            }
+
+            // กรณีตอบถูก
+            let diceRoll = Math.floor(Math.random() * 6) + 1;
+            let currentPos = isP1 ? roomState.p1Pos : roomState.p2Pos;
+            let nextPos = currentPos + diceRoll;
+
+            if (nextPos > 50) nextPos = 50;
+
+            let eventText = "";
+            if (ladders[nextPos]) {
+                nextPos = ladders[nextPos];
+                eventText = " โชคดีเจอปีนบันไดวาร์ปขึ้น! 🪜";
+            } else if (snakes[nextPos]) {
+                nextPos = snakes[nextPos];
+                eventText = " ว๊ายยโดนงูกัดสไลด์ร่วงลงมา! 🐍";
+            }
+
+            let gameFinished = (nextPos === 50);
+
+            await addDoc(collection(db, "rooms", currentRoomId, "words"), {
+                player: myName,
+                word: inputWord,
+                dice: diceRoll,
+                time: Date.now()
+            });
+
+            if (roomState.skipTurn === nextTurn) {
+                alert(`📢 เนื่องจากคุณ ${nextTurn} ติดโทษในรอบก่อน ตาต่อไปจึงถูกข้ามและกลับมาเป็นของ ${myName} อีกครั้ง!`);
+                nextTurn = myName;
+            }
+
+            let updateData = {
+                currentWord: inputWord,
+                currentTurn: nextTurn,
+                lastDice: diceRoll,
+                timer: 15,
+                skipTurn: roomState.skipTurn === nextTurn ? "" : roomState.skipTurn
+            };
+
+            if (isP1) updateData.p1Pos = nextPos;
+            else updateData.p2Pos = nextPos;
+
+            if (gameFinished) {
+                updateData.status = "finished";
+                updateData.finalWinner = myName;
+            }
+
+            await setDoc(doc(db, "rooms", currentRoomId), updateData, { merge: true });
+            document.getElementById("word-input").value = "";
+
+            if (eventText !== "") alert(`ผลเต๋าของคุณ: ได้ ${diceRoll} แต้ม! และ ${eventText}`);
+        };
+
+        function startCountdownTrigger() {
+            if (timerInterval) clearInterval(timerInterval);
+
+            timerInterval = setInterval(async () => {
+                if (roomState.players && roomState.players[0] === myName && roomState.status === "playing") {
+                    let newTimer = roomState.timer - 1;
+
+                    if (newTimer <= 0) {
+                        let loser = roomState.currentTurn;
+                        let winner = (loser === roomState.player1) ? roomState.player2 : roomState.player1;
+
+                        alert(`⏰ หมดเวลา 15 วินาที! คุณ ${loser} ตอบไม่ทัน รอบนี้คุณ ${winner} ชนะทัวร์นาเมนต์ไปเลยจ้า!`);
+
+                        await setDoc(doc(db, "rooms", currentRoomId), {
+                            status: "finished",
+                            finalWinner: winner
+                        }, { merge: true });
+                    } else {
+                        await setDoc(doc(db, "rooms", currentRoomId), { timer: newTimer }, { merge: true });
+                    }
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+
+</html>
